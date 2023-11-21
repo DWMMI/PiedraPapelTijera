@@ -6,13 +6,15 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class Servidor {
 
     public static final int PUERTO = 2000;
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("      APLICACIÓN DE SERVIDOR      ");
+        System.out.println("      BIENVENIDO AL JUEGO       ");
+        System.out.println("      APLICACIÓN DEL JUGADOR 2      ");
         System.out.println("----------------------------------");
 
         //ServidorSocket -> Este objeto es el que estar� escuchando peticiones por un puerto
@@ -40,7 +42,7 @@ public class Servidor {
         //ya que el servidor es un hilo que no para nunca y por cada peticion
         //crea un nuevo objeto Socket a partir del objeto ServerSocket, es decir,
         //sera el objeto ServerSocket el que nos crerara el objeto Socket por nosostros
-        try (ServerSocket serverSocket = new ServerSocket()){
+        try (ServerSocket serverSocket = new ServerSocket()) {
 
             //Decimos al server socket que escuche peticiones desde el puerto
             //que hayamos establecido
@@ -51,8 +53,10 @@ public class Servidor {
 
             //Estamos continuamente escuchando, es lo normal dentro del comportamiento
             //de un servidor, un programa que no para nunca
-            while(true){
+            while (true) {
 
+                int i = 0;
+                int j = 0;
                 System.out.println("SERVIDOR: Esperando peticion por el puerto " + PUERTO);
 
                 //En este punto, se parara el programa, hasta que entre la peticion de
@@ -60,28 +64,54 @@ public class Servidor {
                 socketAlCliente = serverSocket.accept();
                 System.out.println("SERVIDOR: peticion " + ++peticion + " recibida");
 
-                entrada = new InputStreamReader(socketAlCliente.getInputStream());
-                BufferedReader bf = new BufferedReader(entrada);
+                do {
+                    entrada = new InputStreamReader(socketAlCliente.getInputStream());
+                    BufferedReader bf = new BufferedReader(entrada);
 
-                //El servidor se quedar�a aqu� parado hasta que el cliente nos mande
-                //informacion, es decir, cuando haga un salida.println(INFORMACION);
-                String stringRecibido = bf.readLine();//3-4
-
-                //Hay que tener en cuenta que toda comunicacion entre cliente y servidor
-                //esta en formato de cadena de texto
-                System.out.println("SERVIDOR: Me ha llegado del cliente: " + stringRecibido);
-                //Como sabemos que el cliente nos envia un 3-7, hacemos un split por "-"
-                //para obtener la informaci�n.
+                    //El servidor se quedar�a aqu� parado hasta que el cliente nos mande
+                    //informacion, es decir, cuando haga un salida.println(INFORMACION)
 
 
-                //Es en este momento cuando calculamos la suma
-                System.out.println("SERVIDOR: El calculo de los numeros es: ");
+                    String stringRecibido = bf.readLine();
+                    System.out.println("Jugador2 escribe tu elección: piedra, papel o tijera");
 
-                //Mandamos el resultado al cliente
-                salida = new PrintStream(socketAlCliente.getOutputStream());
-                salida.println("ok");
+                    //introducir en el servidor la eleccion del jugador 2
+                    Scanner sc = new Scanner(System.in);
+                    String respuesta2 = sc.next();
+                    String eleccionJ2 = respuesta2.toLowerCase();
 
-                //Si hemos llegado hasta aqui, cerramos las conexiones
+                    //determinar ganador
+                    String resultado = determinarGanador(eleccionJ2, stringRecibido);
+                    System.out.println("SERVIDOR: " + resultado);
+
+                    //Hay que tener en cuenta que toda comunicacion entre cliente y servidor
+                    //esta en formato de cadena de texto
+                    System.out.println("SERVIDOR: Me ha llegado del cliente: " + stringRecibido);
+                    if (resultado.equals("¡Perdiste!")) {
+                        i++;
+                    } else if (resultado.equals("¡Ganaste!")) j++;
+
+                    String iString = Integer.toString(i);
+                    String jString = Integer.toString(j);
+
+                    //Mandamos el resultado al cliente
+                    salida = new PrintStream(socketAlCliente.getOutputStream());
+                    salida.println(stringRecibido + "-" + eleccionJ2 + "-" + iString + "-" + jString);
+                    System.out.println(stringRecibido + "-" + eleccionJ2 + "-" + iString + "-" + jString);
+
+                    if (i == 3 || j == 3) {
+                        stringRecibido = bf.readLine();
+                        if (stringRecibido.equals("finCliente")) {
+
+                            System.out.println("----El servidor ha perdido----");
+
+                        } else if (stringRecibido.equals("finServidor")) {
+
+                            System.out.println("----El servidor ha ganado----");
+
+                        }
+                    }
+                } while (i < 3 || j < 3);
                 socketAlCliente.close();
             }
         } catch (IOException e) {
@@ -92,5 +122,17 @@ public class Servidor {
             e.printStackTrace();
         }
     }//FIN DEL PROGRAMA
+
+    public static String determinarGanador(String jugador1, String jugador2) {
+        if (jugador1.equals(jugador2)) {
+            return "¡Es un empate!";
+        } else if ((jugador1.equals("piedra") && jugador2.equals("tijera")) ||
+                (jugador1.equals("papel") && jugador2.equals("piedra")) ||
+                (jugador1.equals("tijera") && jugador2.equals("papel"))) {
+            return "¡Ganaste!";
+        } else {
+            return "¡Perdiste!";
+        }
+    }
 }
 
